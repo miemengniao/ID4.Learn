@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.IdentityModel.Tokens.Jwt;
 
-namespace ID4.MvcClient
+namespace ID4.WebApi
 {
     public class Startup
     {
@@ -29,7 +24,9 @@ namespace ID4.MvcClient
         public void ConfigureServices(IServiceCollection services)
         {
             // Add framework services.
-            services.AddMvc();
+            services.AddMvcCore()
+                .AddAuthorization()
+                .AddJsonFormatters();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -38,47 +35,26 @@ namespace ID4.MvcClient
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
 
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-                app.UseBrowserLink();
-            }
-            else
-            {
-                app.UseExceptionHandler("/Home/Error");
-            }
+            //app.UseCors(policy =>
+            //{
+            //    policy.AllowAnyOrigin();
+            //    policy.AllowAnyHeader();
+            //    policy.AllowAnyMethod();
+            //    policy.WithExposedHeaders("WWW-Authenticate");
+            //});
 
-            app.UseStaticFiles();
-
-            app.UseCookieAuthentication(new CookieAuthenticationOptions
+            app.UseIdentityServerAuthentication(new IdentityServerAuthenticationOptions
             {
-                AuthenticationScheme = "Cookies"
-            });
-            
-            JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
-
-            app.UseOpenIdConnectAuthentication(new OpenIdConnectOptions
-            {
-                AuthenticationScheme = "oidc",
-                SignInScheme = "Cookies",
-
                 Authority = "http://localhost:5000",
                 RequireHttpsMetadata = false,
 
-                ClientId = "mvc",
-                ClientSecret = "secret",
-                ResponseType = "code id_token",
-                Scope = { "api1", "offline_access" },
-                GetClaimsFromUserInfoEndpoint = true,
-                SaveTokens = true
+                EnableCaching = false,
+
+                ApiName = "api1",
+                //ApiSecret = "secret"
             });
 
-            app.UseMvc(routes =>
-            {
-                routes.MapRoute(
-                    name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
-            });
+            app.UseMvc();
         }
     }
 }
